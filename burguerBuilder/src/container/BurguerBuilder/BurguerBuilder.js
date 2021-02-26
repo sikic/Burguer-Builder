@@ -70,6 +70,9 @@ export default class BurguerBuilder extends Component {
   closeModal = () => {
     this.setState({ purchasing: false });
   };
+  purcharseContinue = () => {
+    alert("You continue");
+  };
   render() {
     const disabledInfo = {
       ...this.state.ingredients,
@@ -81,7 +84,12 @@ export default class BurguerBuilder extends Component {
     return (
       <Auxiliar>
         <Modal show={this.state.purchasing} modalClose={this.closeModal}>
-          <OrderSumary ingredients={this.state.ingredients} />
+          <OrderSumary
+            ingredients={this.state.ingredients}
+            cancel={this.closeModal}
+            continue={this.purcharseContinue}
+            price={this.state.totalPrice}
+          />
         </Modal>
         <Burguer ingredients={this.state.ingredients} />
         <BuildControls
