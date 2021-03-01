@@ -1,16 +1,17 @@
 import React from "react";
 import classes from "./Burguer.css";
 import BurguerIngredients from "../BurguerIngredients/BurguerIngredients";
+import { withRouter } from "react-router-dom";
 
 const Burguer = (props) => {
   let transformedIngredients = Object.keys(props.ingredients)
-    .map(igKey => {
+    .map((igKey) => {
       return [...Array(props.ingredients[igKey])].map((_, i) => {
         return <BurguerIngredients key={igKey + i} type={igKey} />;
       });
     })
     .reduce((arr, el) => {
-      return arr.concat(el)
+      return arr.concat(el);
     }, []);
   if (transformedIngredients.length === 0) {
     transformedIngredients = <p>Please start adding ingredients!</p>;
@@ -24,4 +25,4 @@ const Burguer = (props) => {
   );
 };
 
-export default Burguer;
+export default withRouter(Burguer);
