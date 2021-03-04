@@ -13,7 +13,7 @@ const Toolbar = (props) => {
       </div>
       <Logo height="80%" className={classes.Logo} />
       <nav className={classes.DesktopOnly}>
-        <NavigationsItems />
+        <NavigationsItems token={props.token} />
       </nav>
     </header>
   );

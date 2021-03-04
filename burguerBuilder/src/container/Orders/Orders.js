@@ -2,30 +2,40 @@ import axios from "../../axios-orders";
 import React, { Component } from "react";
 import withErrorHandler from "../../hoc/WithErrorHandler/WithErrorHandler";
 import Order from "../../components/Order/CheckOutsummary/Order";
+import * as actions from "../../store/actions/index";
+import { connect } from "react-redux";
+import Spinner from "../../components/UI/Spinner/Spinner";
 
-export default withErrorHandler(
-  class componentName extends Component {
-    state = {
-      orders: [],
-      laoding: true,
-    };
-    componentDidMount() {
-      axios
-        .get("/orders.json")
-        .then((res) => {
-          const fechrOrder = [];
-          for (const key in res.data) {
-            fechrOrder.push({ ...res.data[key], id: key });
-          }
-          this.setState({ laoding: false, orders: fechrOrder });
-        })
-        .catch((err) => this.setState({ laoding: false }));
-    }
-    render() {
-      return (
-        <div>
-          {this.state.orders.map((elm) => {
-            console.log(elm);
+const mapStateToProps = (state) => {
+  return {
+    orders: state.order.orders,
+    loading: state.order.loading,
+    token: state.auth.token,
+    userId: state.auth.userId,
+  };
+};
+
+const mapDispacthToProps = (Dispacth) => {
+  return {
+    onFecthOrders: (token, userId) =>
+      Dispacth(actions.fecthOrders(token, userId)),
+  };
+};
+
+export default connect(
+  mapStateToProps,
+  mapDispacthToProps
+)(
+  withErrorHandler(
+    class componentName extends Component {
+      componentDidMount() {
+        this.props.onFecthOrders(this.props.token, this.props.userId);
+      }
+      render() {
+        let orders = <Spinner />;
+
+        if (!this.props.loading) {
+          orders = this.props.orders.map((elm) => {
             return (
               <Order
                 key={elm.id}
@@ -33,10 +43,12 @@ export default withErrorHandler(
                 price={elm.price}
               />
             );
-          })}
-        </div>
-      );
-    }
-  },
-  axios
+          });
+        }
+
+        return <div> {orders}</div>;
+      }
+    },
+    axios
+  )
 );

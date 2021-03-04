@@ -7,34 +7,15 @@ import OrderSumary from "../../components/Burguer/OrderSumary/OrderSumary";
 import axios from "../../axios-orders";
 import Spinner from "../../components/UI/Spinner/Spinner";
 import WithErrorHandler from "../../hoc/WithErrorHandler/WithErrorHandler.js";
-
-const INGREDIENTS_PRICES = {
-  salad: 0.5,
-  cheese: 0.4,
-  bacon: 0.7,
-  meat: 1.2,
-};
+import { connect } from "react-redux";
+import * as actions from "../../store/actions/index";
 
 class BurguerBuilder extends Component {
   state = {
-    ingredients: null,
-    totalPrice: 4,
-    pruchaseable: false,
     purchasing: false,
-    loading: false,
-    error: false,
   };
   componentDidMount() {
-    axios
-      .get(
-        "https://react-my-burguer-luis-default-rtdb.europe-west1.firebasedatabase.app/ingredients.json"
-      )
-      .then((response) => {
-        this.setState({ ingredients: response.data });
-      })
-      .catch((error) => {
-        this.setState({ error: true });
-      });
+    this.props.init();
   }
 
   updatePurchase(ingredients) {
@@ -46,68 +27,26 @@ class BurguerBuilder extends Component {
         return sum + el;
       }, 0);
 
-    this.setState({ pruchaseable: sum > 0 });
+    return sum > 0;
   }
-  addIngredientHandler = (type) => {
-    const oldCounter = this.state.ingredients[type];
-    const updateCounter = oldCounter + 1;
-    const updateIngredients = {
-      ...this.state.ingredients,
-    };
-    updateIngredients[type] = updateCounter;
-    const priceAddittion = INGREDIENTS_PRICES[type];
-    const oldPrice = this.state.totalPrice;
-    const updatePrice = oldPrice + priceAddittion;
-    this.setState({
-      totalPrice: updatePrice,
-      ingredients: updateIngredients,
-    });
-    this.updatePurchase(updateIngredients);
-  };
-
-  removeIngredientHandler = (type) => {
-    const oldCounter = this.state.ingredients[type];
-    const updateCounter = oldCounter - 1;
-    const updateIngredients = {
-      ...this.state.ingredients,
-    };
-    updateIngredients[type] = updateCounter;
-    const priceAddittion = INGREDIENTS_PRICES[type];
-    const oldPrice = this.state.totalPrice;
-    const updatePrice = oldPrice - priceAddittion;
-    this.setState({
-      totalPrice: updatePrice,
-      ingredients: updateIngredients,
-    });
-    this.updatePurchase(updateIngredients);
-  };
 
   purcharseHandler = () => {
-    this.setState({ purchasing: true });
+    if (this.props.token) this.setState({ purchasing: true });
+    else {
+      this.props.redirect("/checkout");
+      this.props.history.push("/auth");
+    }
   };
   closeModal = () => {
     this.setState({ purchasing: false });
   };
   purcharseContinue = () => {
-    const queryParams = [];
-
-    for (const i in this.state.ingredients) {
-      queryParams.push(
-        encodeURIComponent(i) +
-          "=" +
-          encodeURIComponent(this.state.ingredients[i])
-      );
-    }
-    queryParams.push("price=" + this.state.totalPrice);
-    const queryString = queryParams.join("&");
-    this.props.history.push({
-      pathname: "/checkout",
-      search: "?" + queryString,
-    });
+    this.props.initBurguer();
+    this.props.history.push("/checkout");
   };
   render() {
     const disabledInfo = {
-      ...this.state.ingredients,
+      ...this.props.ing,
     };
 
     for (let key in disabledInfo) {
@@ -116,36 +55,36 @@ class BurguerBuilder extends Component {
 
     let orderSummary = null;
 
-    let burger = this.state.error ? (
+    let burger = this.props.error ? (
       <p>ingredients can´t be loaded</p>
     ) : (
       <Spinner />
     );
-    if (this.state.ingredients) {
+    if (this.props.ing) {
       burger = (
         <Auxiliar>
-          <Burguer ingredients={this.state.ingredients} />
+          <Burguer ingredients={this.props.ing} />
           <BuildControls
-            add={this.addIngredientHandler}
-            remove={this.removeIngredientHandler}
+            add={this.props.add}
+            remove={() => this.props.remove()}
             disabledInfo={disabledInfo}
-            price={this.state.totalPrice}
-            pruchaseable={this.state.pruchaseable}
+            price={this.props.price}
+            pruchaseable={this.updatePurchase}
             ordered={this.purcharseHandler}
+            token={this.props.token}
           />
         </Auxiliar>
       );
 
       orderSummary = (
         <OrderSumary
-          ingredients={this.state.ingredients}
+          ingredients={this.props.ing}
           cancel={this.closeModal}
           continue={this.purcharseContinue}
-          price={this.state.totalPrice}
+          price={this.props.price}
         />
       );
     }
-    if (this.state.loading) orderSummary = <Spinner />;
     return (
       <Auxiliar>
         <Modal show={this.state.purchasing} modalClose={this.closeModal}>
@@ -157,4 +96,25 @@ class BurguerBuilder extends Component {
   }
 }
 
-export default WithErrorHandler(BurguerBuilder, axios);
+const mapStateToProps = (state) => {
+  return {
+    ing: state.burguerBuilder.ingredients,
+    price: state.burguerBuilder.totalPrice,
+    error: state.burguerBuilder.error,
+    token: state.auth.token,
+  };
+};
+const mapDispacthToProps = (dispatch) => {
+  return {
+    add: (name) => dispatch(actions.addIngredient(name)),
+    remove: (name) => dispatch(actions.removeIngredient(name)),
+    init: () => dispatch(actions.initIngredients()),
+    initBurguer: () => dispatch(actions.initBurguer()),
+    redirect: (path) => dispatch(actions.setAuthRedirect(path)),
+  };
+};
+
+export default connect(
+  mapStateToProps,
+  mapDispacthToProps
+)(WithErrorHandler(BurguerBuilder, axios));

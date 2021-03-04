@@ -16,7 +16,7 @@ const SideDrawer = (props) => {
       <div className={attachedClasses.join(" ")}>
         <Logo height="11%" />
         <nav>
-          <NavigationsItems />
+          <NavigationsItems token={props.token} />
         </nav>
       </div>
     </Auxiliar>
